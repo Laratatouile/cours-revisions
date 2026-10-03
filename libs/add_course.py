@@ -137,7 +137,7 @@ class AddCourseWindow(ctk.CTkToplevel):
         """ Add the course to the database """
         self.logs("adding the course")
 
-        courses = my_libs.json_read("./courses/cours.json")
+        courses = my_libs.json_read("./courses/courses.json")
         if courses == False: courses = {}
 
         course = self.course_var.get()
@@ -152,16 +152,16 @@ class AddCourseWindow(ctk.CTkToplevel):
             "worked": 0
         }
 
-        if course in courses["courses_types"].keys():
-            if chap in courses["courses_types"][course]:
-                courses["courses_types"][course][chap].append(contain)
+        if course in courses.keys():
+            if chap in courses[course]:
+                courses[course][chap].append(contain)
             else:
-                courses["courses_types"][course][chap] = [contain]
+                courses[course][chap] = [contain]
         else:
-            course["courses_types"][course] = {}
-            courses["courses_types"][course][chap] = [contain]
+            courses[course] = {}
+            courses[course][chap] = [contain]
 
-        my_libs.json_save(courses, "./courses/cours.json")
+        my_libs.json_save(courses, "./courses/courses.json")
         self.destroy()
         self.masterr.masterr.display_courses()
         self.logs("the course is added and the window is closed")

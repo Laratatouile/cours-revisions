@@ -22,9 +22,6 @@ class Display(ctk.CTkFrame):
         self.masterr = masterr
 
         self.times = my_libs.json_read("./courses/options.json")["working_planning"]
-        # self.days = [31, 61, 92, 122, 153, 183, 214, 245, 275, 306, 336, 367]
-        # str_day = str(datetime.date.today())
-        # self.day = self.days[int(str_day[5:7])] + int(str_day[8:10])
 
         self.display_courses()
 
@@ -44,7 +41,7 @@ class Display(ctk.CTkFrame):
         """ function that read the file and display all the courses to revise """
         self.logs("loading all the courses")
         
-        cours = my_libs.json_read("./courses/cours.json")
+        cours = my_libs.json_read("./courses/courses.json")
         if cours == False:
             cours = {}
 
@@ -162,7 +159,7 @@ class Button(ctk.CTkButton):
         """ delete the button and change the course """
         self.logs("an other course is revised, well played")
         
-        courses = my_libs.json_read("./courses/cours.json")
+        courses = my_libs.json_read("./courses/courses.json")
 
         for id in self.course_id[2]:
             elmt = courses[self.course_id[0]][self.course_id[1]][id]
@@ -177,7 +174,7 @@ class Button(ctk.CTkButton):
             else:
                 elmt["worked"] += 1
 
-        my_libs.json_save(courses, "./courses/cours.json")
+        my_libs.json_save(courses, "./courses/courses.json")
         self.logs("reloading all the buttons")
         self.masterr.display_courses()
         

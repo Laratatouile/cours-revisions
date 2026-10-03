@@ -60,10 +60,9 @@ class AddCourseType(ctk.CTkToplevel):
         """ Add the course to the database """
         self.logs("adding the course")
 
-        courses = my_libs.json_read("./courses/options.json")["courses_type"]
-        if courses == False: courses = []
+        courses = my_libs.json_read("./courses/options.json")
         
-        courses.append(self.text.get())
+        courses["courses_types"].append(self.text.get())
         
         my_libs.json_save(courses, "./courses/options.json")
         self.destroy()

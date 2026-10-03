@@ -1,4 +1,6 @@
 import customtkinter as ctk
+import os
+
 import libs.my_lib_v2_1 as my_libs
 import libs.display as display
 import libs.add_course_type as add_courses_type
@@ -13,6 +15,20 @@ class App(ctk.CTk):
         self.logs = my_libs.logs("Main")
         self.logs("starting the app")
         super().__init__()
+
+        if not os.path.exists("./courses"):
+            os.mkdir("./courses")
+            with open("./courses/options.json", "w") as file:
+                file.write('{"courses_types": [], "working_planning": [0, 1, 5, 10, 30]}')
+        
+        if not os.path.exists("./courses/options.json"):
+            with open("./courses/options.json", "w") as file:
+                file.write('{"courses_types": [], "working_planning": [0, 1, 5, 10, 30]}')
+
+        if not os.path.exists("./courses/courses.json"):
+            with open("./courses/courses.json", "w") as file:
+                file.write('{}')
+            
 
         self.height = 1000
         self.width = 750

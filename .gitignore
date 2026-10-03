@@ -1,3 +1,2 @@
 **/__pycache__
-courses/cours.json
-courses/options.json
+/courses/*
