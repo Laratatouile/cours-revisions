@@ -122,7 +122,7 @@ class Display(ctk.CTkFrame):
                         self.y += 40
                     
                     self.list_buttons[crs_name][chap_id][id] = Button(self, self.x, self.y, elmt, [crs_name, chap_id, elmt[2]])
-                    self.x += dec_x + 200
+                    self.x += dec_x + 20
 
                 self.y += 40
             self.y += 20

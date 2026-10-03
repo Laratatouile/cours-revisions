@@ -73,7 +73,7 @@ class OptionBar(ctk.CTkFrame):
         self.courses_button = ctk.CTkButton(
             self,
             corner_radius=0,
-            text = "cours",
+            text = "ajouter une matière",
             command = self.add_course_type
         )
         self.courses_button.pack(
