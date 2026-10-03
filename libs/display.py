@@ -1,24 +1,30 @@
 import customtkinter as ctk
-import libs.my_libs as my_libs
+import libs.my_lib_v2_1 as my_libs
 import datetime
 import libs.add_course as add_course
+
+
 
 class Display(ctk.CTkFrame):
     """ class used to display all the courses """
 
-    def __init__(self, master:ctk.CTk) -> None:
+    def __init__(self, masterr:ctk.CTk) -> None:
         """" constructor of the Display class """
-        my_libs.logs("disp_courses", "info", "loading the courses")
+        self.logs = my_libs.logs("disp courses")
+        self.logs("loading the courses")
         super().__init__(
-            master
+            masterr
         )
 
-        self.first_time = True
+        self.list_texts = []
 
-        self.times =  [0, 1, 5, 10, 30, 90]
-        self.days = [31, 61, 92, 122, 153, 183, 214, 245, 275, 306, 336, 367]
-        str_day = str(datetime.date.today())
-        self.day = self.days[int(str_day[5:7])] + int(str_day[8:10])
+        self.first_time = True
+        self.masterr = masterr
+
+        self.times = my_libs.json_read("./courses/options.json")["working_planning"]
+        # self.days = [31, 61, 92, 122, 153, 183, 214, 245, 275, 306, 336, 367]
+        # str_day = str(datetime.date.today())
+        # self.day = self.days[int(str_day[5:7])] + int(str_day[8:10])
 
         self.display_courses()
 
@@ -30,48 +36,102 @@ class Display(ctk.CTkFrame):
 
         # add the button to add courses
         self.add_course = add_course.AddCourse(self)
-        my_libs.logs("disp_courses", "info", "all the courses are loaded and the function to add courses is ready")
+        self.logs("all the courses are loaded and the function to add courses is ready")
 
 
 
     def display_courses(self) -> None:
         """ function that read the file and display all the courses to revise """
-        my_libs.logs("disp_courses", "info", "loading all the courses")
+        self.logs("loading all the courses")
+        
+        cours = my_libs.json_read("./courses/cours.json")
+        if cours == False:
+            cours = {}
 
+        self.logs("all the courses are loaded")
+        self.logs("searching for the courses to revise")
+
+        self.displayable = {}
+
+        for crs_name, course in cours.items():
+            self.displayable[crs_name] = {}
+            for chap_id, chap in course.items():
+                self.displayable[crs_name][chap_id] = []
+                for id, elmt in enumerate(chap):
+
+                    dt = (datetime.date.today() - datetime.date.fromisoformat(elmt["date"])).days
+                    if dt >= self.times[elmt["worked"]]:
+                        if self.displayable[crs_name][chap_id] == []:
+                            self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [id]])
+                        else:
+                            if elmt["page1"] - self.displayable[crs_name][chap_id][-1][1] <= 2:
+                                self.displayable[crs_name][chap_id][-1][1] = elmt["page2"]
+                                self.displayable[crs_name][chap_id][-1][2].append(id)
+                            else:
+                                self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [id]])
+
+                if len(self.displayable[crs_name][chap_id]) == 0:
+                    del self.displayable[crs_name][chap_id]
+            if len(self.displayable[crs_name]) == 0:
+                del self.displayable[crs_name]
+
+        self.logs("the courses to revise are loaded try displaying it")
+        self.update_courses()
+
+
+
+
+    def update_courses(self):
+        """ update the courses """
         self.x = 10
         self.y = 10
+        dec_x = 80
         
-        cours = my_libs.json_read("./cours.json")
-        if cours == None: my_libs.logs("disp_courses", "info", "the courses can't be loaded")
-
-        my_libs.logs("disp_courses", "info", "all the courses are loaded")
-        my_libs.logs("disp_courses", "info", "searching for the courses to revise")
 
         if not self.first_time:
-            for elmt in self.list_buttons.values():
-                try:
-                    elmt.place_forget()
-                except:pass
+            for course in self.list_buttons.values():
+                for chap in course.values():
+                    for elmt in chap.values():
+                        try:
+                            elmt.place_forget()
+                        except: pass
 
-        displayable = {}
+            for elmt in self.list_texts:
+                elmt.place_forget()
+
         self.list_buttons = {}
+        self.list_texts = []
 
-        for name, elmt in cours.items():
-            course_day = self.days[int(elmt["date"][5:7])] + int(elmt["date"][8:10])
-            if self.day - course_day >= self.times[elmt["revise"]]:
-                displayable[name] = elmt
+        for crs_name, course in self.displayable.items():
 
-        my_libs.logs("disp_courses", "info", "the courses to revise are loaded try displaying it")
+            self.x = 10
+            self.list_texts.append(ctk.CTkLabel(self, text=f"Matière : {crs_name.upper()} :"))
+            self.list_texts[-1].place(x=self.x +70, y=self.y)
+            self.y += 40
+            self.list_buttons[crs_name] = {}
 
-        for name, elmt in displayable.items():
-            if self.x + len(name * 7) + 30 > 1000:
+            for chap_id, chap in course.items():
+
                 self.x = 10
+                self.list_texts.append(ctk.CTkLabel(self, text=f"Chapitre {chap_id} :"))
+                self.list_texts[-1].place(x=self.x, y=self.y)
+                self.x += 70
+                self.list_buttons[crs_name][chap_id] = {}
+
+                for elmt in chap:
+
+                    if self.x + dec_x + 20 >= self.masterr.width - 10:
+                        self.x = 10
+                        self.y += 40
+                    
+                    self.list_buttons[crs_name][chap_id][id] = Button(self, self.x, self.y, elmt, [crs_name, chap_id, elmt[2]])
+                    self.x += dec_x + 200
+
                 self.y += 40
-            self.list_buttons[name] = (Button(self, self.x, self.y, name))
-            self.x += len(name * 7) + 30
+            self.y += 20
 
         self.first_time = False
-        my_libs.logs("disp_courses", "info", "all the courses to revise are displayed")
+        self.logs("all the courses to revise are displayed")
 
 
 
@@ -79,20 +139,18 @@ class Display(ctk.CTkFrame):
 class Button(ctk.CTkButton):
     """ a class for the button """
 
-    def __init__(self, master:ctk.CTkFrame, x:int, y:int, course_name:str) -> None:
+    def __init__(self, masterr:Display, x:int, y:int, pages:list, course_id:list) -> None:
         """ the constructor of a button to display one course """
-
-        width = len(course_name * 7) + 10
+        self.logs = my_libs.logs("Button")
 
         super().__init__(
-            master,
+            masterr,
             command = self.delete,
-            text = course_name,
-            width = width
+            text = f"pages {pages[0]} à {pages[1]}",
         )
 
-        self.course_name = course_name
-        self.master = master
+        self.course_id = course_id
+        self.masterr = masterr
 
         self.place(
             x = x,
@@ -102,19 +160,24 @@ class Button(ctk.CTkButton):
 
     def delete(self) -> None:
         """ delete the button and change the course """
-        my_libs.logs("button", "info", f"the {self.course_name} course is revised, well played")
+        self.logs("an other course is revised, well played")
         
-        courses = my_libs.json_read("./cours.json")
-        elmt = courses[self.course_name]
+        courses = my_libs.json_read("./courses/cours.json")
 
-        if elmt["revise"] == len(self.master.times):
-            del courses[self.course_name]
-        else:
-            elmt["revise"] += 1
+        for id in self.course_id[2]:
+            elmt = courses[self.course_id[0]][self.course_id[1]][id]
 
-        self.place_forget()
+            if elmt["worked"] == len(self.masterr.times):
+                # supprime pas les bons parce que fusion des collés
+                del courses[self.course_id[0]][self.course_id[1]][id]
+                if courses[self.course_id[0]][self.course_id[1]] == []:
+                    del courses[self.course_id[0]][self.course_id[1]]
+                if courses[self.course_id[0]] == {}:
+                    del courses[self.course_id[0]]
+            else:
+                elmt["worked"] += 1
 
-        my_libs.json_save(courses, "./cours.json")
-        my_libs.logs("button", "info", "reloading all the buttons")
-        self.master.display_courses()
+        my_libs.json_save(courses, "./courses/cours.json")
+        self.logs("reloading all the buttons")
+        self.masterr.display_courses()
         

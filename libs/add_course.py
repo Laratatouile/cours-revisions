@@ -1,80 +1,173 @@
 import customtkinter as ctk
 import time
 import datetime
-import libs.my_libs as my_libs
+import libs.my_lib_v2_1 as my_libs
 
 
 
 class AddCourseWindow(ctk.CTkToplevel):
     """ generate a new window to add a course """
 
-    def __init__(self, master:ctk.CTkFrame) -> None:
+    def __init__(self, masterr:AddCourse) -> None:
         """ constructor of the class """
-        my_libs.logs("courses", "info", "oppening the window to add a course")
+        self.logs = my_libs.logs("courses")
+        self.logs("oppening the window to add a course")
 
         super().__init__(
-            master,
+            masterr,
         )
 
-        self.master = master
+        self.minsize(200, 270)
+        self.iconbitmap("./icone.ico")
+        self.masterr = masterr
 
-        self.geometry("200x150")
+        self.geometry("200x270")
         self.title("ajouter un cour")
 
-        self.text = ctk.StringVar(self)
-
+        self.courses_options = my_libs.json_read("./courses/options.json")
+        if self.courses_options == False: self.logs("the courses types can't be loaded", 1)
 
         ctk.CTkLabel(
             master = self,
             text="Nom du cour :"
         ).place(
             x = 20,
-            y = 20
+            y = 10
         )
 
+        self.course_var = ctk.StringVar(value=self.courses_options["courses_types"][0])
+        optionmenu = ctk.CTkOptionMenu(
+            self,
+            values=self.courses_options["courses_types"],
+            variable=self.course_var
+        )
+        optionmenu.place(
+            x = 20,
+            y = 40
+        )
+
+
+        ctk.CTkLabel(
+            master = self,
+            text="Numéro du chapitre :"
+        ).place(
+            x = 20,
+            y = 80
+        )
+
+        self.chap = ctk.StringVar(value="")
         entry = ctk.CTkEntry(
             master = self,
-            textvariable = self.text
+            textvariable = self.chap
         )
         entry.place(
             x = 20,
-            y = 50
+            y = 110
         )
-        entry.bind("<Return>", self.add)
-        entry.focus_set()
+
+
+        ctk.CTkLabel(
+            master = self,
+            text="Numéro des pages :"
+        ).place(
+            x = 20,
+            y = 150
+        )
+        
+        self.page1 = ctk.StringVar(value="")
+        ctk.CTkEntry(
+            width = 40,
+            master = self,
+            textvariable = self.page1
+        ).place(
+            x = 20,
+            y = 180
+        )
+
+        ctk.CTkLabel(
+            master = self,
+            text="à"
+        ).place(
+            x = 75,
+            y = 180
+        )
+
+        self.page2 = ctk.StringVar(value="")
+        ctk.CTkEntry(
+            width = 40,
+            master = self,
+            textvariable = self.page2
+        ).place(
+            x = 100,
+            y = 180
+        )
+        
 
         ctk.CTkButton(
             self,
-            width = 30,
-            height = 10,
             text = "Ajouter",
-            command=self.add
+            command = self.verif_add
         ).place(
             x = 20,
-            y = 90
+            y = 230
         )
 
-        self.grab_set()
-        my_libs.logs("courses", "info", "the window to add a course is oppened")
+        self.focus_set()
+        self.logs("the window to add a course is oppened")
+        return
+
 
         
+    def verif_add(self, *args) -> None:
+        """ verification if the numbers waited are really numbers """
+        try:
+            a = int(self.chap.get())
+            p1 = int(self.page1.get())
+            p2 = int(self.page2.get())
+
+            if p1 > p2: return
+        except: return
+
+        self.add()
+        return
 
 
-    def add(self, *args) -> None:
+
+    def add(self) -> None:
         """ Add the course to the database """
-        my_libs.logs("courses", "info", "adding the course")
+        self.logs("adding the course")
 
-        courses = my_libs.json_read("./cours.json")
-        courses[self.text.get()] = {
+        courses = my_libs.json_read("./courses/cours.json")
+        if courses == False: courses = {}
+
+        course = self.course_var.get()
+        chap = self.chap.get()
+        page1 = int(self.page1.get())
+        page2 = int(self.page2.get())
+
+        contain = {
             "date": str(datetime.date.today()),
-            "revise" : 0
+            "page1": page1,
+            "page2": page2,
+            "worked": 0
         }
-        
-        print(courses)
-        my_libs.json_save(courses, "./cours.json")
+
+        if course in courses["courses_types"].keys():
+            if chap in courses["courses_types"][course]:
+                courses["courses_types"][course][chap].append(contain)
+            else:
+                courses["courses_types"][course][chap] = [contain]
+        else:
+            course["courses_types"][course] = {}
+            courses["courses_types"][course][chap] = [contain]
+
+        my_libs.json_save(courses, "./courses/cours.json")
         self.destroy()
-        self.master.master.display_courses()
-        my_libs.logs("courses", "info", "the course is added and the window is closed")
+        self.masterr.masterr.display_courses()
+        self.logs("the course is added and the window is closed")
+
+
+
 
 
 
@@ -83,14 +176,15 @@ class AddCourseWindow(ctk.CTkToplevel):
 class AddCourse(ctk.CTkButton):
     """ the button to add a course """
 
-    def __init__(self, master:ctk.CTkToplevel) -> None:
+    def __init__(self, masterr:ctk.CTkFrame) -> None:
         """ the constructor of the button to add a course """
-        my_libs.logs("courses", "info", "adding the button to add courses")
+        self.logs = my_libs.logs("courses")
+        self.logs("adding the button to add courses")
 
-        self.master = master
+        self.masterr = masterr
 
         super().__init__(
-            master = master,
+            master = masterr.master,
             border_color = "",
             text = "+",
             font = ctk.CTkFont(
@@ -107,9 +201,11 @@ class AddCourse(ctk.CTkButton):
             rely = 0.9
         )
 
-        my_libs.logs("courses", "info", "the button to add courses is added")
+        self.logs("the button to add courses is added")
+
+
 
     def add_course(self) -> None:
         """ add a course to the list of courses """
-        my_libs.logs("courses", "info", "add a course")
+        self.logs("add a course")
         AddCourseWindow(self)
