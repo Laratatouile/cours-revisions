@@ -44,36 +44,83 @@ class Display(ctk.CTkFrame):
         cours = my_libs.json_read("./courses/courses.json")
         if cours == False:
             cours = {}
+            return
 
         self.logs("all the courses are loaded")
         self.logs("searching for the courses to revise")
 
+
+        if not self.first_time:
+            for course in self.list_buttons.values():
+                for chap in course.values():
+                    for elmt in chap.values():
+                        try:
+                            elmt.place_forget()
+                        except: pass
+        
+            for elmt in self.list_texts:
+                elmt.place_forget()
+        
         self.displayable = {}
+        self.list_buttons = {}
+        self.list_texts = []
+
+        self.x = 10
+        self.y = 10
+        dec_x = 80
+
+
 
         for crs_name, course in cours.items():
             self.displayable[crs_name] = {}
+            self.list_buttons[crs_name] = {}
+
             for chap_id, chap in course.items():
                 self.displayable[crs_name][chap_id] = []
-                for id, elmt in enumerate(chap):
+                self.list_buttons[crs_name][chap_id] = {}
+
+                nb_btn = 0
+
+                for elmt_id, elmt in enumerate(chap):
 
                     dt = (datetime.date.today() - datetime.date.fromisoformat(elmt["date"])).days
                     if dt >= self.times[elmt["worked"]]:
+
                         if self.displayable[crs_name][chap_id] == []:
-                            self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [id]])
+                            self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [elmt_id]])
+                        
                         else:
                             if elmt["page1"] - self.displayable[crs_name][chap_id][-1][1] <= 2:
                                 self.displayable[crs_name][chap_id][-1][1] = elmt["page2"]
-                                self.displayable[crs_name][chap_id][-1][2].append(id)
+                                self.displayable[crs_name][chap_id][-1][2].append(elmt_id)
                             else:
-                                self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [id]])
+                                self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [elmt_id]])
+                                self.list_buttons[crs_name][chap_id][nb_btn] = Button(
+                                    self,
+                                    0, 0,
+                                    [elmt["page1"], elmt["page2"]],
+                                    [crs_name, chap_id, self.displayable[crs_name][chap_id][-1][2]]
+                                )
+                                nb_btn += 1
+
+
 
                 if len(self.displayable[crs_name][chap_id]) == 0:
                     del self.displayable[crs_name][chap_id]
+                else:
+                    self.list_buttons[crs_name][chap_id][nb_btn] = Button(
+                        self,
+                        0, 0,
+                        [elmt["page1"], elmt["page2"]],
+                        [crs_name, chap_id, self.displayable[crs_name][chap_id][-1][2]]
+                    )
+    
             if len(self.displayable[crs_name]) == 0:
                 del self.displayable[crs_name]
 
-        self.logs("the courses to revise are loaded try displaying it")
-        self.update_courses()
+        self.first_time = False
+    
+        self.logs("all the courses to revise are initialised")
 
 
 
@@ -83,20 +130,10 @@ class Display(ctk.CTkFrame):
         self.x = 10
         self.y = 10
         dec_x = 80
-        
+    
+        for elmt in self.list_texts:
+            elmt.place_forget()
 
-        if not self.first_time:
-            for course in self.list_buttons.values():
-                for chap in course.values():
-                    for elmt in chap.values():
-                        try:
-                            elmt.place_forget()
-                        except: pass
-
-            for elmt in self.list_texts:
-                elmt.place_forget()
-
-        self.list_buttons = {}
         self.list_texts = []
 
         for crs_name, course in self.displayable.items():
@@ -105,7 +142,6 @@ class Display(ctk.CTkFrame):
             self.list_texts.append(ctk.CTkLabel(self, text=f"Matière : {crs_name.upper()} :"))
             self.list_texts[-1].place(x=self.x +70, y=self.y)
             self.y += 40
-            self.list_buttons[crs_name] = {}
 
             for chap_id, chap in course.items():
 
@@ -113,18 +149,18 @@ class Display(ctk.CTkFrame):
                 self.list_texts.append(ctk.CTkLabel(self, text=f"Chapitre {chap_id} :"))
                 self.list_texts[-1].place(x=self.x, y=self.y)
                 self.x += 70
-                self.list_buttons[crs_name][chap_id] = {}
 
-                for elmt in chap:
+                for elmt_id, elmt in enumerate(chap):
 
-                    if self.x + dec_x + 20 >= self.masterr.width - 10:
+                    # reset the position
+                    if self.x + dec_x + 30 >= self.masterr.width:
                         self.x = 10
-                        self.y += 40
-                    
-                    self.list_buttons[crs_name][chap_id][id] = Button(self, self.x, self.y, elmt, [crs_name, chap_id, elmt[2]])
-                    self.x += dec_x + 20
+                        self.y += 50
 
-                self.y += 40
+                    self.list_buttons[crs_name][chap_id][elmt_id].place_configure(x=self.x*self.masterr.scaling, y=self.y*self.masterr.scaling)
+                    self.x += dec_x + 70
+
+                self.y += 50
             self.y += 20
 
         self.first_time = False
@@ -161,20 +197,22 @@ class Button(ctk.CTkButton):
         
         courses = my_libs.json_read("./courses/courses.json")
 
-        for id in self.course_id[2]:
-            elmt = courses[self.course_id[0]][self.course_id[1]][id]
+        for elmt_id in self.course_id[2]:
+            if courses[self.course_id[0]][self.course_id[1]][elmt_id]["worked"] >= len(self.masterr.times) -1:
+                # the real suppression
+                del courses[self.course_id[0]][self.course_id[1]][elmt_id]
 
-            if elmt["worked"] == len(self.masterr.times):
-                # supprime pas les bons parce que fusion des collés
-                del courses[self.course_id[0]][self.course_id[1]][id]
+                # delete the part if the part is empty
                 if courses[self.course_id[0]][self.course_id[1]] == []:
                     del courses[self.course_id[0]][self.course_id[1]]
                 if courses[self.course_id[0]] == {}:
                     del courses[self.course_id[0]]
             else:
-                elmt["worked"] += 1
+                courses[self.course_id[0]][self.course_id[1]][elmt_id]["worked"] += 1
 
+        self.place_forget()
         my_libs.json_save(courses, "./courses/courses.json")
         self.logs("reloading all the buttons")
         self.masterr.display_courses()
+        self.masterr.update_courses()
         

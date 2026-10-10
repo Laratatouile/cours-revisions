@@ -32,6 +32,7 @@ class App(ctk.CTk):
 
         self.height = 1000
         self.width = 750
+        self.scaling = self._get_window_scaling()
 
         self.title("cours à réviser")
         self.minsize(width=600, height=600)
@@ -49,10 +50,13 @@ class App(ctk.CTk):
 
     def on_config(self, event):
         if event.widget == self:
-            scaling = self._get_window_scaling()
-            self.width = event.width / scaling
-            self.height = event.height / scaling
-            self.display.update_courses()
+            width = event.width / self.scaling
+            height = event.height / self.scaling
+
+            if not (self.width == width and self.height == height):
+                self.width = width
+                self.height = height
+                self.display.update_courses()
 
 
 
