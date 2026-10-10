@@ -79,8 +79,6 @@ class Display(ctk.CTkFrame):
                 self.displayable[crs_name][chap_id] = []
                 self.list_buttons[crs_name][chap_id] = {}
 
-                nb_btn = 0
-
                 for elmt_id, elmt in enumerate(chap):
 
                     dt = (datetime.date.today() - datetime.date.fromisoformat(elmt["date"])).days
@@ -95,25 +93,19 @@ class Display(ctk.CTkFrame):
                                 self.displayable[crs_name][chap_id][-1][2].append(elmt_id)
                             else:
                                 self.displayable[crs_name][chap_id].append([elmt["page1"], elmt["page2"], [elmt_id]])
-                                self.list_buttons[crs_name][chap_id][nb_btn] = Button(
-                                    self,
-                                    0, 0,
-                                    [elmt["page1"], elmt["page2"]],
-                                    [crs_name, chap_id, self.displayable[crs_name][chap_id][-1][2]]
-                                )
-                                nb_btn += 1
 
+                # create the buttons
+                for nb_btn, elmt in enumerate(self.displayable[crs_name][chap_id]):
+                    self.list_buttons[crs_name][chap_id][nb_btn] = Button(
+                        self,
+                        0, 0,
+                        [elmt[0], elmt[1]],
+                        [crs_name, chap_id, elmt[2]]
+                    )
 
 
                 if len(self.displayable[crs_name][chap_id]) == 0:
                     del self.displayable[crs_name][chap_id]
-                else:
-                    self.list_buttons[crs_name][chap_id][nb_btn] = Button(
-                        self,
-                        0, 0,
-                        [elmt["page1"], elmt["page2"]],
-                        [crs_name, chap_id, self.displayable[crs_name][chap_id][-1][2]]
-                    )
     
             if len(self.displayable[crs_name]) == 0:
                 del self.displayable[crs_name]
@@ -197,7 +189,7 @@ class Button(ctk.CTkButton):
         
         courses = my_libs.json_read("./courses/courses.json")
 
-        for elmt_id in self.course_id[2]:
+        for elmt_id in reversed(self.course_id[2]):
             if courses[self.course_id[0]][self.course_id[1]][elmt_id]["worked"] >= len(self.masterr.times) -1:
                 # the real suppression
                 del courses[self.course_id[0]][self.course_id[1]][elmt_id]
